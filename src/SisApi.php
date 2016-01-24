@@ -95,6 +95,9 @@ class SisApi {
 
 					$this->user->grades[] = new \Models\Grade($grade['courseName'], $grade['grade'], date('d-m-Y', strtotime($grade['date'])));
 				}
+
+				return $this->user->grades;
+
 			} else {
 				throw new \Exceptions\GradesError("Splitsing on grade tr failed");
 			}
