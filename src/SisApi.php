@@ -14,6 +14,7 @@ class SisApi {
 	}
 
 	public function verifyUserAuthentication($username, $password) {
+		$username = strtolower($username);
 		$this->cleanUpCookieFiles();
 
 		$this->request->params = array(
