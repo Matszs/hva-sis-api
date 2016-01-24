@@ -14,6 +14,7 @@ class SisApi {
 	}
 
 	public function verifyUserAuthentication($username, $password) {
+		$this->cleanUpCookieFiles();
 
 		$this->request->params = array(
 			'timezoneOffset' => 0,
@@ -115,7 +116,13 @@ class SisApi {
 	}
 
 	private function cleanUpCookieFiles() {
-		
+		$files = glob(TMP . "/cookies/*");
+		$now   = time();
+
+		foreach ($files as $file)
+			if (is_file($file))
+				if ($now - filemtime($file) >= 60 * 60 * 24 * 2) // 2 days
+					unlink($file);
 	}
 
 }
