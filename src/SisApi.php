@@ -114,4 +114,8 @@ class SisApi {
 		unset($tmpUser);
 	}
 
+	private function cleanUpCookieFiles() {
+		
+	}
+
 }
