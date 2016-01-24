@@ -53,27 +53,10 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 		Database::setParam('telegram_user_id', $_GET['telegram_user_id']);
 
 		Database::query("INSERT INTO tokens (username, password, telegram_user_id) VALUES ('{username}', '" . $encryption . "', '{telegram_user_id}');");
-		die("Succesvol gekoppeld.");
+		echo "<div style='background: #fff; text-align: center; height: 20px; margin: 20px; border: 2px solid #e67d21; border-radius: 5px;'>Succesvol gekoppeld. Probeer nu de bot met de volgende command: &nbsp; &nbsp; &nbsp;  /sis</div>";
 	}
 
-
-
-	echo '<form method="POST">';
-	echo '<table>';
-	echo '	<tr>';
-	echo '		<td><label>Gebruikersnaam</label></td>';
-	echo '		<td><input type="text" name="username" /></td>';
-	echo '	</tr>';
-	echo '	<tr>';
-	echo '		<td><label>Wachtwoord</label></td>';
-	echo '		<td><input type="password" name="password" /></td>';
-	echo '	</tr>';
-	echo '	<tr>';
-	echo '		<td><label>Bevestigen</label></td>';
-	echo '		<td><input type="submit" name="submit" value="Haal token op" /></td>';
-	echo '	</tr>';
-	echo '</table>';
-	echo '</form>';
+	include('telegram/login.php');
 
 } else if(!empty($_GET['action']) && $_GET['action'] == 'grades' && !empty($_GET['telegram_user_id'])) {
 	Database::setParam('telegram_user_id', $_GET['telegram_user_id']);
