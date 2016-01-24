@@ -8,13 +8,13 @@ class Crypt {
 	public static function encrypt($string) {
 		$iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC);
 		$iv = mcrypt_create_iv($iv_size, MCRYPT_DEV_URANDOM);
-		$key = pack('H*', "bcb04b7e103a0cd8b54diojfsdf90sef8u909fdebae5e1d417e2ffb2a00a3");
+		$key = pack('H*', "87435943758943758934563489756438752657843657834265783426589");
 
 		return json_encode(array('key' => self::base64url_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $key, $string, MCRYPT_MODE_CBC, $iv)), 'iv' => self::base64url_encode($iv)));
 	}
 
 	public static function decrypt($data) {
-		$key = pack('H*', "bcb04b7e103a0cd8b54diojfsdf90sef8u909fdebae5e1d417e2ffb2a00a3");
+		$key = pack('H*', "87435943758943758934563489756438752657843657834265783426589");
 		$data = json_decode($data, true);
 
 		$string = self::base64url_decode($data['key']);
@@ -42,7 +42,7 @@ function printJson($success, $message) {
 	die(json_encode(array('success' => $success, 'message' => $message)));
 }
 
-Database::init(array('file' => 'telegram_sis_api.db'));
+Database::init(array('file' => '../databases/telegram_sis_api.db'));
 @Database::query("CREATE TABLE tokens (id INTEGER PRIMARY KEY, username TEXT, password TEXT, telegram_user_id TEXT)"); // create table
 
 if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['telegram_user_id'])) {
@@ -55,6 +55,8 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 		Database::query("INSERT INTO tokens (username, password, telegram_user_id) VALUES ('{username}', '" . $encryption . "', '{telegram_user_id}');");
 		die("Succesvol gekoppeld.");
 	}
+
+
 
 	echo '<form method="POST">';
 	echo '<table>';
@@ -92,7 +94,7 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 
 						$gradesArray = array();
 						foreach($grades as $grade) {
-							if(count($gradesArray) > 5)
+							if(count($gradesArray) > 10)
 								break;
 							$gradesArray[] = array(
 								'courseName' => $grade->getCourseName(),
