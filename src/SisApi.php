@@ -89,8 +89,8 @@ class SisApi {
 				foreach($gradesData as $gradeRow) {
 					$grade = array('courseName' => '', 'grade' => '', 'date' => '');
 
-					if(preg_match('/class=\'PSHYPERLINK\' >(.*?)<\/a>/', $gradeRow, $courseNameMatches)) {
-						$grade['courseName'] = $courseNameMatches[1];
+					if(preg_match('/a .*? class=\'PSHYPERLINK\' .*?>(.*?)<\/a>/', $gradeRow, $courseNameMatches)) {
+						$grade['courseName'] = strip_tags($courseNameMatches[1]);
 					}
 					if(preg_match('/id=\'SNS_CRSE_GRADE\$([0-9]{0,10})\'>(.*?)<\/span>/', $gradeRow, $gradeMatches)) {
 						$grade['grade'] = $gradeMatches[2];

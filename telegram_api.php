@@ -59,43 +59,47 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 	include('telegram/login.php');
 
 } else if(!empty($_GET['action']) && $_GET['action'] == 'grades' && !empty($_GET['telegram_user_id'])) {
-	Database::setParam('telegram_user_id', $_GET['telegram_user_id']);
-	$userData = Database::query('SELECT * FROM tokens WHERE telegram_user_id = {telegram_user_id} ORDER BY id DESC LIMIT 1');
+	try {
+		Database::setParam('telegram_user_id', $_GET['telegram_user_id']);
+		$userData = Database::query('SELECT * FROM tokens WHERE telegram_user_id = \'{telegram_user_id}\' ORDER BY id DESC LIMIT 1');
 
-	if($userData = Database::getArray($userData)) {
-		if(isset($userData[0])) {
-			if($userData = $userData[0]) {
-				$decryption = Crypt::decrypt(Crypt::base64url_decode($userData['password']));
-				$decryption = json_decode($decryption, true);
-				if($decryption) {
-					if (isset($decryption['password'])) {
-						require __DIR__.'/src/bootstrap.php';
+		if ($userData && $userData = Database::getArray($userData)) {
+			if (isset($userData[0])) {
+				if ($userData = $userData[0]) {
+					$decryption = Crypt::decrypt(Crypt::base64url_decode($userData['password']));
+					$decryption = json_decode($decryption, true);
+					if ($decryption) {
+						if (isset($decryption['password'])) {
+							require __DIR__ . '/src/bootstrap.php';
 
-						$sisApi = new SisApi();
-						$sisApi->verifyUserAuthentication($userData['username'], $decryption['password']);
-						$sisApi->getDetailedUserData(); // To display the username
-						$grades = $sisApi->getUserGrades();
-						$user = $sisApi->getUser();
+							$sisApi = new SisApi();
+							$sisApi->verifyUserAuthentication($userData['username'], $decryption['password']);
+							$sisApi->getDetailedUserData(); // To display the username
+							$grades = $sisApi->getUserGrades();
+							$user = $sisApi->getUser();
 
-						$gradesArray = array();
-						foreach($grades as $grade) {
-							if(count($gradesArray) > 10)
-								break;
-							if($grade->getGrade() == 'no result')
-								continue;
-							$gradesArray[] = array(
-								'courseName' => $grade->getCourseName(),
-								'grade' => str_replace('sat.', 'voldoende', $grade->getGrade())
-							);
+							$gradesArray = array();
+							foreach ($grades as $grade) {
+								if (count($gradesArray) > 10)
+									break;
+								if ($grade->getGrade() == 'no result')
+									continue;
+								$gradesArray[] = array(
+									'courseName' => $grade->getCourseName(),
+									'grade' => str_replace('sat.', 'voldoende', $grade->getGrade())
+								);
+							}
+
+							printJson(true, array('user' => $user->getFirstname() . ' - ' . $user->getStudentNumber(), 'grades' => $gradesArray));
 						}
-
-						printJson(true, array('user' => $user->getFirstname() . ' - '. $user->getStudentNumber(), 'grades' => $gradesArray));
 					}
 				}
 			}
 		}
-	}
 
-	printJson(false, "User not connected.");
+		printJson(false, "User not connected.");
+	} catch(Exception $e) {
+		printJson(false, "Unknown action.");
+	}
 } else
 	printJson(false, "Unknown action.");
