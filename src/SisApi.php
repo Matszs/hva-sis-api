@@ -32,6 +32,10 @@ class SisApi {
 		return true;
 	}
 
+	public function getUser() {
+		return $this->user;
+	}
+
 	public function getDetailedUserData() {
 		if(!$this->user)
 			throw new \Exceptions\IncorrectUserDetails("User details are not found.");
@@ -51,7 +55,7 @@ class SisApi {
 
 			if(strpos($nameString, '(') !== false) {
 				$nameSplit = explode('(', $nameString);
-				$this->user->setName($nameSplit[0]);
+				$this->user->setName(trim($nameSplit[0]));
 			}
 		}
 

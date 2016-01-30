@@ -73,19 +73,23 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 
 						$sisApi = new SisApi();
 						$sisApi->verifyUserAuthentication($userData['username'], $decryption['password']);
+						$sisApi->getDetailedUserData(); // To display the username
 						$grades = $sisApi->getUserGrades();
+						$user = $sisApi->getUser();
 
 						$gradesArray = array();
 						foreach($grades as $grade) {
 							if(count($gradesArray) > 10)
 								break;
+							if($grade->getGrade() == 'no result')
+								continue;
 							$gradesArray[] = array(
 								'courseName' => $grade->getCourseName(),
-								'grade' => $grade->getGrade()
+								'grade' => str_replace('sat.', 'voldoende', $grade->getGrade())
 							);
 						}
 
-						printJson(true, $gradesArray);
+						printJson(true, array('user' => $user->getFirstname() . ' - '. $user->getStudentNumber(), 'grades' => $gradesArray));
 					}
 				}
 			}
