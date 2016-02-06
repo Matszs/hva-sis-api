@@ -86,7 +86,7 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 									continue;
 								$gradesArray[] = array(
 									'courseName' => $grade->getCourseName(),
-									'grade' => str_replace('sat.', 'voldoende', $grade->getGrade())
+									'grade' => str_replace(array('not sat.', 'sat.'), array('Onvoldoende', 'voldoende'), $grade->getGrade())
 								);
 							}
 
