@@ -145,7 +145,7 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 										'cookies' => false
 									));
 									$request->params = array('course' => $grade->getCourseName());
-									$request->call('/sis-notifier.php', 'post');
+									$request->call('qtkoreanbot/sis-notifier.php', 'post');
 								}
 							}
 						}
