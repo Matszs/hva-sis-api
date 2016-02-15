@@ -112,6 +112,12 @@ class SisApi {
 		}
 	}
 
+	public function getUserCredits() {
+		if(!$this->user)
+			throw new \Exceptions\IncorrectUserDetails("User details are not found.");
+
+	}
+
 	/**
 	 *	To prevent printing the password we create a temp user and delete the password from that user.
 	 */
