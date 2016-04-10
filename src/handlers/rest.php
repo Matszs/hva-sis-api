@@ -6,14 +6,21 @@ class Rest
 	public $params = array();
 	private $config = array();
 	private $ch; // cURL Handler
+	public $cookies = false;
 
 	public function __construct($config = array()) {
 		$this->config = array_merge(array(
 			'cookies' => true,
 			'cookie_file' => TMP . '/cookies/' . \Utilities\Random::simpleString(10) . '.txt',
 			'root' => 'https://sis.hva.nl:8011/',
-			'user_agent' => $this->getRandomUserAgent()
+			'user_agent' => $this->getRandomUserAgent(),
+			'use_cookie_class' => false
 		), $config);
+		$this->cookies = new Cookie();
+	}
+
+	public function setConfig($args = array()) {
+		$this->config = array_merge($this->config, $args);
 	}
 
 	public function call($path, $requestType = 'post') {
@@ -34,9 +41,13 @@ class Rest
 		}
 
 		if ($this->config['cookies']) {
-			curl_setopt($this->ch, CURLOPT_COOKIESESSION, true);
-			curl_setopt($this->ch, CURLOPT_COOKIEJAR, $this->config['cookie_file']);
-			curl_setopt($this->ch, CURLOPT_COOKIEFILE, $this->config['cookie_file']);
+			if($this->config['use_cookie_class']) {
+				curl_setopt($this->ch, CURLOPT_HTTPHEADER, array("Cookie: " . $this->cookies->getRules()));
+			} else {
+				curl_setopt($this->ch, CURLOPT_COOKIESESSION, true);
+				curl_setopt($this->ch, CURLOPT_COOKIEJAR, $this->config['cookie_file']);
+				curl_setopt($this->ch, CURLOPT_COOKIEFILE, $this->config['cookie_file']);
+			}
 		} else {
 			curl_setopt($this->ch, CURLOPT_COOKIESESSION, false);
 		}
@@ -44,8 +55,17 @@ class Rest
 		curl_setopt($this->ch, CURLOPT_FOLLOWLOCATION, true); // Follow the redirects if we get redirected.
 		curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, 1); // Don't print output
 
+		curl_setopt($this->ch, CURLOPT_HEADER, 1);
+
 		$this->params = null;
-		return curl_exec($this->ch);
+		$content = curl_exec($this->ch);
+
+		$this->cookies->parseData($content);
+
+		if($this->config['cookies'])
+			$this->cookies = new Cookie($this->config['cookie_file']);
+
+		return $content;
 	}
 
 	public function close() {

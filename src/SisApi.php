@@ -8,9 +8,7 @@ class SisApi {
 	 * SisApi constructor.
 	 */
 	public function __construct() {
-		$this->request = new Handlers\Rest(array(
-			'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:43.0) Gecko/20100101 Firefox/43.0',
-		));
+		$this->request = new Handlers\Rest();
 	}
 
 	public function verifyUserAuthentication($username, $password) {
@@ -18,17 +16,23 @@ class SisApi {
 		$this->cleanUpCookieFiles();
 
 		$this->request->params = array(
-			'timezoneOffset' => 0,
+			'timezoneOffset' => -120,
 			'userid' => $username,
-			'pwd' => urlencode($password)
+			'pwd' => urlencode($password),
+			'ticket' => ''
 		);
 
+		//$loginData = $this->request->call('psp/S2PRD/EMPLOYEE/HRMS/?cmd=login&languageCd=ENG');
 		$loginData = $this->request->call('psp/S2PRD/EMPLOYEE/HRMS/?cmd=login&languageCd=ENG');
+		//$loginData = $this->request->call('psc/S2PRD/EMPLOYEE/HRMS/s/WEBLIB_PTBR.ISCRIPT1.FieldFormula.IScript_StartPage', 'get');
+		//$loginData = $this->request->call('psp/S2PRD/EMPLOYEE/HRMS/h/?tab=DEFAULT', 'get');
+		$loginData = $this->request->call('psp/S2PRD/EMPLOYEE/HRMS/h/?cmd=getCachedPglt&pageletname=MENU&tab=DEFAULT&PORTALPARAM_COMPWIDTH=Narrow&t=1460302053424&ptlayout=N', 'get');
 
 		if(strpos($loginData, 'Self Service') === false) // Check if we are successfully logged in.
 			throw new \Exceptions\IncorrectUserDetails("User details are incorrect.");
 
 		$this->user = new \Models\User($username, $password);
+
 		return true;
 	}
 
@@ -40,7 +44,9 @@ class SisApi {
 		if(!$this->user)
 			throw new \Exceptions\IncorrectUserDetails("User details are not found.");
 
-		$userData = $this->request->call('psc/S2PRD/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL?PORTALPARAM_PTCNAV=HC_SSS_STUDENT_CENTER&EOPP.SCNode=HRMS&EOPP.SCPortal=EMPLOYEE&EOPP.SCName=CO_EMPLOYEE_SELF_SERVICE&EOPP.SCLabel=Self%20Service&EOPP.SCPTfname=CO_EMPLOYEE_SELF_SERVICE&FolderPath=PORTAL_ROOT_OBJECT.CO_EMPLOYEE_SELF_SERVICE.HC_SSS_STUDENT_CENTER&IsFolder=false&PORTALPARAM_PTCNAV=HC_SSS_STUDENT_CENTER&EOPP.SCNode=HRMS&EOPP.SCPortal=EMPLOYEE&EOPP.SCName=CO_EMPLOYEE_SELF_SERVICE&EOPP.SCLabel=Self%20Service&EOPP.SCPTfname=CO_EMPLOYEE_SELF_SERVICE&FolderPath=PORTAL_ROOT_OBJECT.CO_EMPLOYEE_SELF_SERVICE.HC_SSS_STUDENT_CENTER&IsFolder=false&PortalActualURL=https%3a%2f%2fsis.hva.nl%3a8011%2fpsc%2fS2PRD%2fEMPLOYEE%2fHRMS%2fc%2fSA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL%3fPORTALPARAM_PTCNAV%3dHC_SSS_STUDENT_CENTER%26EOPP.SCNode%3dHRMS%26EOPP.SCPortal%3dEMPLOYEE%26EOPP.SCName%3dCO_EMPLOYEE_SELF_SERVICE%26EOPP.SCLabel%3dSelf%2520Service%26EOPP.SCPTfname%3dCO_EMPLOYEE_SELF_SERVICE%26FolderPath%3dPORTAL_ROOT_OBJECT.CO_EMPLOYEE_SELF_SERVICE.HC_SSS_STUDENT_CENTER%26IsFolder%3dfalse&PortalContentURL=https%3a%2f%2fsis.hva.nl%3a8011%2fpsc%2fS2PRD%2fEMPLOYEE%2fHRMS%2fc%2fSA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL&PortalContentProvider=HRMS&PortalCRefLabel=Student%20Center&PortalRegistryName=EMPLOYEE&PortalServletURI=https%3a%2f%2fsis.hva.nl%3a8011%2fpsp%2fS2PRD%2f&PortalURI=https%3a%2f%2fsis.hva.nl%3a8011%2fpsc%2fS2PRD%2f&PortalHostNode=HRMS&NoCrumbs=yes&PortalKeyStruct=yes', 'get');
+		$this->request->setConfig(array('use_cookie_class' => true));
+		$this->request->cookies->addRule('PS_DEVICEFEATURES=width:1920 height:1080 pixelratio:1 touch:0 geolocation:1 websockets:1 webworkers:1 datepicker:0 dtpicker:0 timepicker:0 dnd:1 sessionstorage:1 localstorage:1 history:1 canvas:1 svg:1 postmessage:1 hc:0');
+		$userData = $this->request->call('psc/S2PRD/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL?PORTALPARAM_PTCNAV=HC_SSS_STUDENT_CENTER&EOPP.SCNode=HRMS&EOPP.SCPortal=EMPLOYEE&EOPP.SCName=CO_EMPLOYEE_SELF_SERVICE&EOPP.SCLabel=Self%20Service&EOPP.SCPTfname=CO_EMPLOYEE_SELF_SERVICE&FolderPath=PORTAL_ROOT_OBJECT.CO_EMPLOYEE_SELF_SERVICE.HC_SSS_STUDENT_CENTER&IsFolder=false&PortalActualURL=https%3a%2f%2fsis.hva.nl%3a8011%2fpsc%2fS2PRD%2fEMPLOYEE%2fHRMS%2fc%2fSA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL&PortalContentURL=https%3a%2f%2fsis.hva.nl%3a8011%2fpsc%2fS2PRD%2fEMPLOYEE%2fHRMS%2fc%2fSA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL&PortalContentProvider=HRMS&PortalCRefLabel=Student%20Center&PortalRegistryName=EMPLOYEE&PortalServletURI=https%3a%2f%2fsis.hva.nl%3a8011%2fpsp%2fS2PRD%2f&PortalURI=https%3a%2f%2fsis.hva.nl%3a8011%2fpsc%2fS2PRD%2f&PortalHostNode=HRMS&NoCrumbs=yes&PortalKeyStruct=yes', 'get');
 
 		if(preg_match('/{EMPLID:"([0-9]{1,20})"};/', $userData, $studentNumberMatch)) {
 			$this->user->setStudentNumber($studentNumberMatch[1]);
@@ -78,6 +84,7 @@ class SisApi {
 
 		$this->user->grades = array();
 
+		$this->request->cookies->addRule('PS_DEVICEFEATURES=width:1920 height:1080 pixelratio:1 touch:0 geolocation:1 websockets:1 webworkers:1 datepicker:0 dtpicker:0 timepicker:0 dnd:1 sessionstorage:1 localstorage:1 history:1 canvas:1 svg:1 postmessage:1 hc:0');
 		$userGrades = $this->request->call('psc/S2PRD/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SSS_MY_CRSEHIST.GBL?Page=SSS_MY_CRSEHIST&Action=U', 'get');
 
 		$tableSplit = explode('id=\'CRSE_HIST$scroll$0\'', $userGrades);
