@@ -84,6 +84,7 @@ class SisApi {
 
 		$this->user->grades = array();
 
+		$this->request->setConfig(array('use_cookie_class' => true));
 		$this->request->cookies->addRule('PS_DEVICEFEATURES=width:1920 height:1080 pixelratio:1 touch:0 geolocation:1 websockets:1 webworkers:1 datepicker:0 dtpicker:0 timepicker:0 dnd:1 sessionstorage:1 localstorage:1 history:1 canvas:1 svg:1 postmessage:1 hc:0');
 		$userGrades = $this->request->call('psc/S2PRD/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SSS_MY_CRSEHIST.GBL?Page=SSS_MY_CRSEHIST&Action=U', 'get');
 

@@ -64,9 +64,14 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 		Database::setParam('telegram_user_id', $_GET['telegram_user_id']);
 		$userData = Database::query('SELECT * FROM tokens WHERE telegram_user_id = \'{telegram_user_id}\' ORDER BY id DESC LIMIT 1');
 
+
 		if ($userData && $userData = Database::getArray($userData)) {
 			if (isset($userData[0])) {
 				if ($userData = $userData[0]) {
+					$averageGrades = array();
+					$totalGrade = 0;
+					$amountOfGrades = 0;
+
 					$decryption = Crypt::decrypt(Crypt::base64url_decode($userData['password']));
 					$decryption = json_decode($decryption, true);
 					if ($decryption) {
@@ -81,14 +86,32 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 
 							$gradesArray = array();
 							foreach ($grades as $grade) {
-								if (count($gradesArray) > 10)
-									break;
 								if ($grade->getGrade() == 'no result')
+									continue;
+								$numberFormattedGrade = str_replace(',', '.', $grade->getGrade());
+								if(is_numeric($numberFormattedGrade)) {
+									if(array_key_exists($grade->getCourseName(), $averageGrades)) {
+										if($numberFormattedGrade > $averageGrades[$grade->getCourseName()]) {
+											$totalGrade += ($numberFormattedGrade - $averageGrades[$grade->getCourseName()]);
+											$averageGrades[$grade->getCourseName()] = $numberFormattedGrade;
+										}
+									} else {
+										$averageGrades[$grade->getCourseName()] = $numberFormattedGrade;
+										$totalGrade += $numberFormattedGrade;
+										$amountOfGrades++;
+									}
+								}
+								if (count($gradesArray) > 10)
 									continue;
 								$gradesArray[] = array(
 									'courseName' => $grade->getCourseName(),
 									'grade' => str_replace(array('not sat.', 'sat.'), array('Onvoldoende', 'voldoende'), $grade->getGrade())
 								);
+							}
+
+							if($amountOfGrades > 0) {
+								$gradesArray[] = array('courseName' => '--------', 'grade' => '');
+								$gradesArray[] = array('courseName' => 'Gemiddelde', 'grade' => number_format($totalGrade / $amountOfGrades, 1, ',', '.'));
 							}
 
 							printJson(true, array('user' => $user->getFirstname() . ' - ' . $user->getStudentNumber(), 'grades' => $gradesArray));
@@ -100,7 +123,7 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 
 		printJson(false, "User not connected.");
 	} catch(Exception $e) {
-		printJson(false, "Unknown action.");
+		printJson(false, "Error connecting to SIS.");
 	}
 } else if(!empty($_GET['action']) && $_GET['action'] == 'cron') {
 	Database::setParam('telegram_user_id', 176808727);
@@ -111,6 +134,7 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 			if ($userData = $userData[0]) {
 				$decryption = Crypt::decrypt(Crypt::base64url_decode($userData['password']));
 				$decryption = json_decode($decryption, true);
+
 				if ($decryption) {
 					if (isset($decryption['password'])) {
 						require __DIR__ . '/src/bootstrap.php';
@@ -140,10 +164,13 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 									Database::query("INSERT INTO courses (name, exam_date) VALUES ('{courseName}', '{courseDate}');");
 
 									$request = new Handlers\Rest(array(
-										'root' => 'http://chinchilla.plebtier.com/',
+										'root' => 'https://chinchilla.plebtier.com/',
 										'user_agent' => 'SIS-api',
 										'cookies' => false
 									));
+									$request->params = array('course' => $grade->getCourseName());
+									$request->call('chinchilla_mammalia/sis-notifier.php', 'post');
+
 									$request->params = array('course' => $grade->getCourseName());
 									$request->call('qtkoreanbot/sis-notifier.php', 'post');
 								}
