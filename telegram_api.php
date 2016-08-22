@@ -68,9 +68,6 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 		if ($userData && $userData = Database::getArray($userData)) {
 			if (isset($userData[0])) {
 				if ($userData = $userData[0]) {
-					$averageGrades = array();
-					$totalGrade = 0;
-					$amountOfGrades = 0;
 
 					$decryption = Crypt::decrypt(Crypt::base64url_decode($userData['password']));
 					$decryption = json_decode($decryption, true);
@@ -83,24 +80,10 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 							$sisApi->getDetailedUserData(); // To display the username
 							$grades = $sisApi->getUserGrades();
 							$user = $sisApi->getUser();
+							$sisApi->getRequirements();
 
 							$gradesArray = array();
 							foreach ($grades as $grade) {
-								if ($grade->getGrade() == 'no result')
-									continue;
-								$numberFormattedGrade = str_replace(',', '.', $grade->getGrade());
-								if(is_numeric($numberFormattedGrade)) {
-									if(array_key_exists($grade->getCourseName(), $averageGrades)) {
-										if($numberFormattedGrade > $averageGrades[$grade->getCourseName()]) {
-											$totalGrade += ($numberFormattedGrade - $averageGrades[$grade->getCourseName()]);
-											$averageGrades[$grade->getCourseName()] = $numberFormattedGrade;
-										}
-									} else {
-										$averageGrades[$grade->getCourseName()] = $numberFormattedGrade;
-										$totalGrade += $numberFormattedGrade;
-										$amountOfGrades++;
-									}
-								}
 								if (count($gradesArray) > 10)
 									continue;
 								$gradesArray[] = array(
@@ -109,9 +92,12 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 								);
 							}
 
-							if($amountOfGrades > 0) {
+							if(count($grades) > 0) {
 								$gradesArray[] = array('courseName' => '--------', 'grade' => '');
-								$gradesArray[] = array('courseName' => 'Gemiddelde', 'grade' => number_format($totalGrade / $amountOfGrades, 1, ',', '.'));
+								$gradesArray[] = array('courseName' => 'Gemiddelde', 'grade' => $user->getAverageGrade());
+							}
+							if($user->requirementReport->getScore() > 0) {
+								$gradesArray[] = array('courseName' => 'Studiepunten', 'grade' => $user->requirementReport->getScore());
 							}
 
 							printJson(true, array('user' => $user->getFirstname() . ' - ' . $user->getStudentNumber(), 'grades' => $gradesArray));

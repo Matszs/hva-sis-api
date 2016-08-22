@@ -14,7 +14,8 @@ class Rest
 			'cookie_file' => TMP . '/cookies/' . \Utilities\Random::simpleString(10) . '.txt',
 			'root' => 'https://sis.hva.nl:8011/',
 			'user_agent' => $this->getRandomUserAgent(),
-			'use_cookie_class' => false
+			'use_cookie_class' => false,
+			'referer' => ''
 		), $config);
 		$this->cookies = new Cookie();
 	}
@@ -55,7 +56,14 @@ class Rest
 		curl_setopt($this->ch, CURLOPT_FOLLOWLOCATION, true); // Follow the redirects if we get redirected.
 		curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, 1); // Don't print output
 
+		//curl_setopt($this->ch, CURLOPT_VERBOSE, true);
+		//curl_setopt($this->ch, CURLOPT_STDERR, fopen('php://stderr', 'w'));
+
 		curl_setopt($this->ch, CURLOPT_HEADER, 1);
+		if($this->config['referer']) {
+			curl_setopt($this->ch, CURLOPT_REFERER, $this->config['referer']);
+			$this->setConfig(array('referer', ''));
+		}
 
 		$this->params = null;
 		$content = curl_exec($this->ch);

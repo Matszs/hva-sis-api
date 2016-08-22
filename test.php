@@ -5,8 +5,9 @@ require __DIR__.'/src/bootstrap.php';
 $sisApi = new SisApi();
 try {
 	$sisApi->verifyUserAuthentication('USERNAME', 'PASSWORD');
-	$sisApi->getDetailedUserData();
+	//$sisApi->getDetailedUserData();
 	$sisApi->getUserGrades();
+	$sisApi->getRequirements();
 
 	$sisApi->printUser();
 

@@ -12,7 +12,10 @@ class User {
 	private $email;
 	private $advisor;
 
+	private $averageGrade;
 	public $grades;
+
+	public $requirementReport;
 
     public function __construct($username, $password) {
         $this->username = $username;
@@ -126,5 +129,21 @@ class User {
 	public function setAdvisor($advisor)
 	{
 		$this->advisor = $advisor;
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function getAverageGrade()
+	{
+		return $this->averageGrade;
+	}
+
+	/**
+	 * @param $averageGrade
+	 */
+	public function setAverageGrade($averageGrade)
+	{
+		$this->averageGrade = $averageGrade;
 	}
 }

@@ -94,6 +94,10 @@ class SisApi {
 			if($gradesData && count($gradesData) > 1) {
 				unset($gradesData[0]);
 
+				$highestGrades = array();
+				$gradeCounter = 0;
+				$gradesSum = 0;
+
 				foreach($gradesData as $gradeRow) {
 					$grade = array('courseName' => '', 'grade' => '', 'date' => '');
 
@@ -107,8 +111,36 @@ class SisApi {
 						$grade['date'] = $dateMatches[2];
 					}
 
+					$numberFormattedGrade = str_replace(',', '.', $grade['grade']);
+					if ($grade['grade'] == 'no result')
+						$numberFormattedGrade = 1; // if you have no result, the grade is 1.
+					if ($grade['grade'] == 'sat.' || $grade['grade'] == 'not sat.')
+						$numberFormattedGrade = 0;
+
+					if(is_numeric($numberFormattedGrade)) {
+						if(array_key_exists($grade['courseName'], $highestGrades)) {
+							if($numberFormattedGrade > $highestGrades[$grade['courseName']] || $numberFormattedGrade == 0) {
+								if($highestGrades[$grade['courseName']] > 0 && $numberFormattedGrade == 0) {
+									$gradesSum -= $highestGrades[$grade['courseName']];
+									$gradeCounter--; // take one off in case of 'no result'.
+									$highestGrades[$grade['courseName']] = $numberFormattedGrade;
+								} else {
+									$gradesSum += ($numberFormattedGrade - $highestGrades[$grade['courseName']]);
+									$highestGrades[$grade['courseName']] = $numberFormattedGrade;
+								}
+							}
+						} else {
+							$highestGrades[$grade['courseName']] = $numberFormattedGrade;
+							$gradesSum += $numberFormattedGrade;
+							if($numberFormattedGrade != 0)
+								$gradeCounter++;
+						}
+					}
+
 					$this->user->grades[] = new \Models\Grade($grade['courseName'], $grade['grade'], date('d-m-Y', strtotime($grade['date'])));
 				}
+
+				$this->user->setAverageGrade(number_format($gradesSum / $gradeCounter, 1, ',', '.'));
 
 				return $this->user->grades;
 
@@ -118,6 +150,91 @@ class SisApi {
 		} else {
 			throw new \Exceptions\GradesError("Table of grades not found");
 		}
+	}
+
+	public function getRequirements() {
+		if(!$this->user)
+			throw new \Exceptions\IncorrectUserDetails("User details are not found.");
+
+
+		$this->request->setConfig(array('use_cookie_class' => true, 'referer' => 'https://sis.hva.nl:8011/psc/S2PRD/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SAA_SS_DPR_ADB.GBL?Page=SAA_SS_DPR_ADB&Action=A&ICAction=DERIVED_SAA_DPR_SSS_EXPAND_ALL'));
+		$this->request->cookies->addRule('PS_DEVICEFEATURES=width:1920 height:1080 pixelratio:1 touch:0 geolocation:1 websockets:1 webworkers:1 datepicker:0 dtpicker:0 timepicker:0 dnd:1 sessionstorage:1 localstorage:1 history:1 canvas:1 svg:1 postmessage:1 hc:0');
+
+
+		//$requirementsData = $this->request->call('psc/S2PRD/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SAA_SS_DPR_ADB.GBL?Page=SAA_SS_DPR_ADB&Action=A&ICAction=DERIVED_SAA_DPR_SSS_EXPAND_ALL', 'get');
+		$requirementsData = $this->request->call('psc/S2PRD/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SAA_SS_DPR_ADB.GBL?Page=SAA_SS_DPR_ADB&Action=A', 'get');
+
+
+		$date = null;
+		$score = 0;
+
+		if(preg_match("/id='SAA_ADB_REPORT_SAA_RPT_DTTM_STAMP'>(.*?)<\/span>/", $requirementsData, $dateMatches)) {
+			$date = strip_tags($dateMatches[1]);
+		}
+
+		if(preg_match_all("/<span class=PSLONGEDITBOX><ul><LI>(.*?)</", $requirementsData, $unitsMatches)) {
+			if(isset($unitsMatches[1]) && count($unitsMatches[1]) > 0) {
+				foreach($unitsMatches[1] as $unitsMatch) {
+					if (preg_match_all('/([0-9.]{1,10})/', $unitsMatch, $match)) {
+						list($required, $taken, $needed) = $match[1];
+
+						if($required == 240) // all the points needed
+							$score = $taken;
+					}
+				}
+			}
+		}
+
+		$requirement = new \Models\RequirementReport();
+		$requirement->setDate($date);
+		$requirement->setScore($score);
+
+		$this->user->requirementReport = $requirement;
+
+
+
+		/*$this->request->setConfig(array('use_cookie_class' => true));
+		$this->request->cookies->addRule('PS_DEVICEFEATURES=width:1920 height:1080 pixelratio:1 touch:0 geolocation:1 websockets:1 webworkers:1 datepicker:0 dtpicker:0 timepicker:0 dnd:1 sessionstorage:1 localstorage:1 history:1 canvas:1 svg:1 postmessage:1 hc:0');
+
+
+
+		$this->request->cookies->addRule('psback=""url":"https://sis.hva.nl:8011/psc/S2PRD/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SAA_SS_DPR_ADB.GBL?" "label":"My Academic Requirements" "origin":"PIA" "layout":"0""');
+		$this->request->params = array(
+			'ICAJAX' => '1',
+			'ICNAVTYPEDROPDOWN' => '1',
+			'ICType' => 'Panel',
+			'ICElementNum' => '0',
+			'ICEStateNum' => '8',
+			'ICAction' => 'DERIVED_SAA_DPR_SSS_EXPAND_ALL',
+			'ICXPos' => '0',
+			'ICYPos' => '0',
+			'ResponsetoDiffFrame' => '-1',
+			'TargetFrameName' => 'None',
+			'FacetPath' => 'None',
+			'ICFocus' => '',
+			'ICSaveWarningFilter' => '0',
+			'ICChanged' => '-1',
+			'ICAutoSave' => '0',
+			'ICResubmit' => '0',
+			'ICSID' => 'k+KEkzZje/MQYTaK1uhqpjnKB6/Zv3eVNx33H6BlJWU=',
+			'ICActionPrompt' => 'false',
+			'ICBcDomData' => '"undefined"',
+			'ICFind' => '',
+			'ICAddCount' => '',
+			'ICAPPCLSDATA' => '',
+			'#ICDataLang' => 'ENG',
+			'DERIVED_SSTSNAV_SSTS_MAIN_GOTO$7$' => '0100',
+			'DERIVED_SSTSNAV_SSTS_MAIN_GOTO$8$' => '0100',
+			'ptus_defaultlocalnode' => 'PSFT_HR',
+			'ptus_dbname' => 'S2PRD',
+			'ptus_portal' => 'EMPLOYEE',
+			'ptus_node' => 'HRMS',
+			'ptus_workcenterid' => '',
+			'ptus_componenturl' => 'https://sis.hva.nl:8011/psp/S2PRD/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SAA_SS_DPR_ADB.GBL',
+		);
+		$requirementsData = $this->request->call('psc/S2PRD/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SAA_SS_DPR_ADB.GBL', 'post');
+
+		print_r($requirementsData);*/
 	}
 
 	/**
