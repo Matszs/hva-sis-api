@@ -84,6 +84,8 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 
 							$gradesArray = array();
 							foreach ($grades as $grade) {
+								if($grade->getGrade() == "no result")
+									continue;
 								if (count($gradesArray) > 10)
 									continue;
 								$gradesArray[] = array(
@@ -97,7 +99,7 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 								$gradesArray[] = array('courseName' => 'Gemiddelde', 'grade' => $user->getAverageGrade());
 							}
 							if($user->requirementReport->getScore() > 0) {
-								$gradesArray[] = array('courseName' => 'Studiepunten', 'grade' => $user->requirementReport->getScore());
+								$gradesArray[] = array('courseName' => 'Studiepunten', 'grade' => $user->requirementReport->getScore() . '/240 (' . number_format(floatval($user->requirementReport->getScore())/240*100, 0, ',', '.') . '%)');
 							}
 
 							printJson(true, array('user' => $user->getFirstname() . ' - ' . $user->getStudentNumber(), 'grades' => $gradesArray));
