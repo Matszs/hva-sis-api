@@ -178,8 +178,10 @@ class SisApi {
 					if (preg_match_all('/([0-9.]{1,10})/', $unitsMatch, $match)) {
 						list($required, $taken, $needed) = $match[1];
 
-						if($required == 240) // all the points needed
+						if($required == 240) { // all the points needed
 							$score = $taken;
+							break;
+						}
 					}
 				}
 			}
