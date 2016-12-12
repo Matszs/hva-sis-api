@@ -1,6 +1,6 @@
 <?php
 
-include("sqlite_database.php");
+include("mysql_database.php");
 
 class Crypt {
 	public static $iv;
@@ -14,7 +14,7 @@ class Crypt {
 	}
 
 	public static function decrypt($data) {
-		$key = pack('H*', "87435943758943758934563489756438752657843657834265783426589");
+		$key = pack('H*', "87435943758943758934563489756438752657843657834265783426589")."\0"."\0";
 		$data = json_decode($data, true);
 
 		$string = self::base64url_decode($data['key']);
@@ -42,9 +42,9 @@ function printJson($success, $message = null) {
 	die(json_encode(array('success' => $success, 'message' => $message)));
 }
 
-Database::init(array('file' => '../databases/telegram_sis_api.db'));
-@Database::query("CREATE TABLE tokens (id INTEGER PRIMARY KEY, username TEXT, password TEXT, telegram_user_id TEXT)"); // create table
-@Database::query("CREATE TABLE courses (id INTEGER PRIMARY KEY, name TEXT, exam_date TEXT)"); // create table
+Database::init(array('host' => 'localhost', 'user' => 'sis', 'password' => '', 'database' => 'sis'));
+//@Database::query("CREATE TABLE tokens (id INTEGER PRIMARY KEY, username TEXT, password TEXT, telegram_user_id TEXT)"); // create table
+//@Database::query("CREATE TABLE courses (id INTEGER PRIMARY KEY, name TEXT, exam_date TEXT)"); // create table
 
 if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['telegram_user_id'])) {
 	if(isset($_POST['username']) && isset($_POST['password'])) {
@@ -86,7 +86,7 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 							foreach ($grades as $grade) {
 								if($grade->getGrade() == "no result")
 									continue;
-								if (count($gradesArray) > 10)
+								if (count($gradesArray) > 10 && (!isset($_GET['list']) || (isset($_GET['list']) && !$_GET['list'])))
 									continue;
 								$gradesArray[] = array(
 									'courseName' => $grade->getCourseName(),
