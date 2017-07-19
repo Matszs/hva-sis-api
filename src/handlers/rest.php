@@ -15,7 +15,8 @@ class Rest
 			'root' => 'https://sis.hva.nl:8011/',
 			'user_agent' => $this->getRandomUserAgent(),
 			'use_cookie_class' => false,
-			'referer' => ''
+			'referer' => '',
+			'headers' => false
 		), $config);
 		$this->cookies = new Cookie();
 	}
@@ -52,6 +53,11 @@ class Rest
 		} else {
 			curl_setopt($this->ch, CURLOPT_COOKIESESSION, false);
 		}
+
+		if($this->config['headers']) {
+			curl_setopt($this->ch, CURLOPT_HTTPHEADER, $this->config['headers']);
+		}
+
 		curl_setopt($this->ch, CURLOPT_USERAGENT, $this->config['user_agent']);
 		curl_setopt($this->ch, CURLOPT_FOLLOWLOCATION, true); // Follow the redirects if we get redirected.
 		curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, 1); // Don't print output

@@ -114,7 +114,7 @@ class SisApi {
 					$numberFormattedGrade = str_replace(',', '.', $grade['grade']);
 					if ($grade['grade'] == 'no result')
 						$numberFormattedGrade = 1; // if you have no result, the grade is 1.
-					if ($grade['grade'] == 'sat.' || $grade['grade'] == 'not sat.')
+					if ($grade['grade'] == 'pass' || $grade['grade'] == 'not sat.')
 						$numberFormattedGrade = 0;
 
 					if(is_numeric($numberFormattedGrade)) {

@@ -84,19 +84,21 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 
 							$gradesArray = array();
 							foreach ($grades as $grade) {
-								if($grade->getGrade() == "no result")
-									continue;
+//								if($grade->getGrade() == "no result")
+//									continue;
 								if (count($gradesArray) > 10 && (!isset($_GET['list']) || (isset($_GET['list']) && !$_GET['list'])))
 									continue;
 								$gradesArray[] = array(
 									'courseName' => $grade->getCourseName(),
-									'grade' => str_replace(array('not sat.', 'sat.'), array('Onvoldoende', 'voldoende'), $grade->getGrade())
+									'grade' => str_replace(array('not sat.', 'pass', 'no result'), array('Onvoldoende', 'voldoende', 'geen resultaat'), $grade->getGrade())
 								);
 							}
 
 							if(count($grades) > 0) {
 								$gradesArray[] = array('courseName' => '--------', 'grade' => '');
 								$gradesArray[] = array('courseName' => 'Gemiddelde', 'grade' => $user->getAverageGrade());
+								if($user->getFailCount() > 0)
+								    $gradesArray[] = array('courseName' => 'Onvoldoendes', 'grade' => $user->getFailCount());
 							}
 							if($user->requirementReport->getScore() > 0) {
 								$gradesArray[] = array('courseName' => 'Studiepunten', 'grade' => $user->requirementReport->getScore() . '/240 (' . number_format(floatval($user->requirementReport->getScore())/240*100, 0, ',', '.') . '%)');
@@ -157,10 +159,23 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 										'cookies' => false
 									));
 									$request->params = array('course' => $grade->getCourseName());
-									$request->call('chinchilla_mammalia/sis-notifier.php', 'post');
+									$request->call('chinchilla/sis-notifier.php', 'post');
 
 									$request->params = array('course' => $grade->getCourseName());
 									$request->call('qtkoreanbot/sis-notifier.php', 'post');
+
+									$request = new Handlers\Rest(array(
+										'root' => 'https://api.pushbullet.com/v2/',
+										'user_agent' => 'SIS-api',
+										'cookies' => false,
+										'headers' => array(
+											'Authorization: Bearer '
+										)
+									));
+									$request->params = array('type' => 'note', 'title' => 'Nieuw cijfer: ' . $grade->getCourseName(), 'body' => 'Nieuw cijfer voor het vak ' . $grade->getCourseName() . ', cijfer: ' . $grade->getGrade());
+									$request->call('pushes', 'post');
+
+
 								}
 							}
 						}
