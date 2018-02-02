@@ -8,7 +8,8 @@ class Crypt {
 	public static function encrypt($string) {
 		$iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC);
 		$iv = mcrypt_create_iv($iv_size, MCRYPT_DEV_URANDOM);
-		$key = pack('H*', "87435943758943758934563489756438752657843657834265783426589");
+		$key = pack('H*', "87435943758943758934563489756438752657843657834265783426589") ."\0"."\0";
+
 
 		return json_encode(array('key' => self::base64url_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $key, $string, MCRYPT_MODE_CBC, $iv)), 'iv' => self::base64url_encode($iv)));
 	}
