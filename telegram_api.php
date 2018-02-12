@@ -117,77 +117,82 @@ if(!empty($_GET['action']) && $_GET['action'] == 'connect' && !empty($_GET['tele
 		printJson(false, "Error connecting to SIS.");
 	}
 } else if(!empty($_GET['action']) && $_GET['action'] == 'cron') {
-	Database::setParam('telegram_user_id', 176808727);
-	$userData = Database::query('SELECT * FROM tokens WHERE telegram_user_id = \'{telegram_user_id}\' ORDER BY id DESC LIMIT 1');
 
-	if ($userData && $userData = Database::getArray($userData)) {
-		if (isset($userData[0])) {
-			if ($userData = $userData[0]) {
-				$decryption = Crypt::decrypt(Crypt::base64url_decode($userData['password']));
-				$decryption = json_decode($decryption, true);
+	$telegramUserIds = array(176808727, 172749143);
 
-				if ($decryption) {
-					if (isset($decryption['password'])) {
-						require __DIR__ . '/src/bootstrap.php';
+	foreach($telegramUserIds as $telegramUserId) {
 
-						$sisApi = new SisApi();
-						$sisApi->verifyUserAuthentication($userData['username'], $decryption['password']);
-						$grades = $sisApi->getUserGrades();
-
-						$gradesArray = array();
-						foreach ($grades as $grade) {
-							if (count($gradesArray) > 10)
-								break;
-							if ($grade->getGrade() == 'no result')
-								continue;
-
-							Database::setParam('courseName', $grade->getCourseName());
-							Database::setParam('courseDate', $grade->getDate());
-							$courseData = Database::query('SELECT count(*) as count FROM courses WHERE name = \'{courseName}\' AND exam_date = \'{courseDate}\' LIMIT 1');
-							if($courseData && $courseData = Database::getArray($courseData)) {
-								if(isset($courseData[0]) && isset($courseData[0]['count']) && $courseData[0]['count'] == 0) {
-
-									echo $grade->getCourseName();
-
-									Database::setParam('courseName', $grade->getCourseName());
-									Database::setParam('courseDate', $grade->getDate());
-
-									Database::query("INSERT INTO courses (name, exam_date) VALUES ('{courseName}', '{courseDate}');");
-
-									$request = new Handlers\Rest(array(
-										'root' => 'https://chinchilla.plebtier.com/',
-										'user_agent' => 'SIS-api',
-										'cookies' => false
-									));
-									$request->params = array('course' => $grade->getCourseName());
-									$request->call('chinchilla/sis-notifier.php', 'post');
-
-									$request->params = array('course' => $grade->getCourseName());
-									$request->call('qtkoreanbot/sis-notifier.php', 'post');
-
-									$request = new Handlers\Rest(array(
-										'root' => 'https://api.pushbullet.com/v2/',
-										'user_agent' => 'SIS-api',
-										'cookies' => false,
-										'headers' => array(
-											'Authorization: Bearer '
-										)
-									));
-									$request->params = array('type' => 'note', 'title' => 'Nieuw cijfer: ' . $grade->getCourseName(), 'body' => 'Nieuw cijfer voor het vak ' . $grade->getCourseName() . ', cijfer: ' . $grade->getGrade());
-									$request->call('pushes', 'post');
+		Database::setParam('telegram_user_id', $telegramUserId);
+		$userData = Database::query('SELECT * FROM tokens WHERE telegram_user_id = \'{telegram_user_id}\' ORDER BY id DESC LIMIT 1');
 
 
+		if ($userData && $userData = Database::getArray($userData)) {
+
+			if (isset($userData[0])) {
+				if ($userData = $userData[0]) {
+					$decryption = Crypt::decrypt(Crypt::base64url_decode($userData['password']));
+					$decryption = json_decode($decryption, true);
+
+					if ($decryption) {
+						if (isset($decryption['password'])) {
+							require __DIR__ . '/src/bootstrap.php';
+
+							$sisApi = new SisApi();
+							$sisApi->verifyUserAuthentication($userData['username'], $decryption['password']);
+							$grades = $sisApi->getUserGrades();
+
+							$gradesArray = array();
+							foreach ($grades as $grade) {
+								if (count($gradesArray) > 10)
+									break;
+								if ($grade->getGrade() == 'no result')
+									continue;
+
+								Database::setParam('courseName', $grade->getCourseName());
+								Database::setParam('courseDate', $grade->getDate());
+								$courseData = Database::query('SELECT count(*) as count FROM courses WHERE name = \'{courseName}\' AND exam_date = \'{courseDate}\' LIMIT 1');
+								if ($courseData && $courseData = Database::getArray($courseData)) {
+									if (isset($courseData[0]) && isset($courseData[0]['count']) && $courseData[0]['count'] == 0) {
+
+										echo $grade->getCourseName();
+
+										Database::setParam('courseName', $grade->getCourseName());
+										Database::setParam('courseDate', $grade->getDate());
+
+										Database::query("INSERT INTO courses (name, exam_date) VALUES ('{courseName}', '{courseDate}');");
+
+										$request = new Handlers\Rest(array(
+											'root' => 'https://chinchilla.plebtier.com/',
+											'user_agent' => 'SIS-api',
+											'cookies' => false
+										));
+										$request->params = array('course' => $grade->getCourseName());
+										$request->call('chinchilla/sis-notifier.php', 'post');
+
+										$request->params = array('course' => $grade->getCourseName());
+										$request->call('qtkoreanbot/sis-notifier.php', 'post');
+
+										$request = new Handlers\Rest(array(
+											'root' => 'https://api.pushbullet.com/v2/',
+											'user_agent' => 'SIS-api',
+											'cookies' => false,
+											'headers' => array(
+												'Authorization: Bearer'
+											)
+										));
+										$request->params = array('type' => 'note', 'title' => 'Nieuw cijfer: ' . $grade->getCourseName(), 'body' => 'Nieuw cijfer ' . $userData['username'] . ' voor het vak ' . $grade->getCourseName() . ', cijfer: ' . $grade->getGrade());
+										$request->call('pushes', 'post');
+									}
 								}
 							}
 						}
-
-						printJson(true);
 					}
 				}
 			}
 		}
 	}
 
+	printJson(true);
 
 } else
 	printJson(false, "Unknown action.");

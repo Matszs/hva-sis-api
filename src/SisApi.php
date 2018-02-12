@@ -112,16 +112,17 @@ class SisApi {
 					}
 
 					$numberFormattedGrade = str_replace(',', '.', $grade['grade']);
-					if ($grade['grade'] == 'no result')
+					if ($grade['grade'] == 'no result' || $grade['grade'] == 'not sat.')
 						$numberFormattedGrade = 1; // if you have no result, the grade is 1.
-					if ($grade['grade'] == 'pass' || $grade['grade'] == 'not sat.')
-						$numberFormattedGrade = 0;
+					if ($grade['grade'] == 'pass')
+						$numberFormattedGrade = 1337;
 
 					if(is_numeric($numberFormattedGrade)) {
 						if(array_key_exists($grade['courseName'], $highestGrades)) {
-							if($numberFormattedGrade > $highestGrades[$grade['courseName']] || $numberFormattedGrade == 0) {
-								if($highestGrades[$grade['courseName']] > 0 && $numberFormattedGrade == 0) {
-									$gradesSum -= $highestGrades[$grade['courseName']];
+
+							if($numberFormattedGrade > $highestGrades[$grade['courseName']]) {
+								if($numberFormattedGrade == 1337) {
+								    $gradesSum -= $highestGrades[$grade['courseName']];
 									$gradeCounter--; // take one off in case of 'no result'.
 									$highestGrades[$grade['courseName']] = $numberFormattedGrade;
 								} else {
@@ -129,16 +130,26 @@ class SisApi {
 									$highestGrades[$grade['courseName']] = $numberFormattedGrade;
 								}
 							}
+
 						} else {
 							$highestGrades[$grade['courseName']] = $numberFormattedGrade;
-							$gradesSum += $numberFormattedGrade;
-							if($numberFormattedGrade != 0)
-								$gradeCounter++;
+							if($numberFormattedGrade != 1337) {
+                                $gradesSum += $numberFormattedGrade;
+                                $gradeCounter++;
+                            }
 						}
 					}
 
 					$this->user->grades[] = new \Models\Grade($grade['courseName'], $grade['grade'], date('d-m-Y', strtotime($grade['date'])));
 				}
+
+                foreach($highestGrades as $courseName => $grade) {
+                    if ((is_numeric($grade) && $grade >= 5.5) || $grade == 0)
+                        $this->user->addPass();
+                    else {
+                        $this->user->addFail();
+                    }
+                }
 
 				$this->user->setAverageGrade(number_format($gradesSum / $gradeCounter, 1, ',', '.'));
 
